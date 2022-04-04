@@ -3,8 +3,8 @@ CFLAGS= 	-g -Wall -std=gnu99 -Iinclude -pthread
 TARGETS= 	mpwordleserver mpwordle
 
 # variables
-SERVER_OBJS = src/server.o src/server_socket.o
-CLIENT_OBJS = src/client.o src/client_socket.o
+SERVER_OBJS = src/server.o src/server_socket.o src/cJSON.o src/wordle.o
+CLIENT_OBJS = src/client.o src/client_socket.o src/cJSON.o src/wordle.o
 
 all: 		$(TARGETS)
 
