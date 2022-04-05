@@ -1,5 +1,5 @@
 #include "wordle/wordle.h"
-
+#include <ctype.h>
 #define CLIENT "bwisemaSgood"
 
 char *message_to_json(Message *msg, Type type) {
@@ -16,7 +16,18 @@ char *message_to_json(Message *msg, Type type) {
 			cJSON_AddStringToObject(items, "Name", msg->name);
 			cJSON_AddStringToObject(items, "Text", msg->text);
 			cJSON_AddItemToObject(json, "chat", items);
-		    break;	
+		    break;
+		case JOIN_RESULT:	
+			cJSON_AddStringToObject(items, "Name", msg->name);
+			cJSON_AddStringToObject(items, "Result", msg->result);
+			cJSON_AddItemToObject(json, "JoinResult", items);
+			break;
+		case START_GAME:
+			cJSON_AddStringToObject(items, "Server", msg->server);
+			cJSON_AddStringToObject(items, "Port", msg->port);
+			cJSON_AddNumberToObject(items, "Nonce", msg->nonce);
+			cJSON_AddItemToObject(json, "StartGame", items);
+			break;
 		default:
 			puts("bad type");
 			return NULL;
@@ -121,26 +132,23 @@ cJSON *get_message_type(cJSON *object, Message *msg) {
 
 }
 
-Message *message_from_command(char *commands) {
-	
+Message *message_from_command(char *commands, char *name) {
+
 	Message *msg = calloc(1, sizeof(Message));
-
-	char *cmd = strtok(commands, " ");
-
+	char *cmd = strtok(commands, " \n");
+	*cmd = tolower(cmd[0]);
 	if (!strcmp(cmd, "join")) {
-		char *name = strtok(NULL, "\n");
 		strcpy(msg->name, name);
 		strcpy(msg->client, CLIENT);
 		msg->type = JOIN;
 	
 	} else if (!strcmp(cmd, "chat")) {
-		puts("chat");
-		char *name = strtok(NULL, " ");
+
 		char *text = strtok(NULL, "\n");
 		strcpy(msg->name, name);
 		strcpy(msg->text, text);
 		msg->type = CHAT;
-		puts("out");
+
 	} else {
 		return NULL;
 	}
@@ -180,10 +188,10 @@ Message *message_from_json(char *json) {
 	
 	value = cJSON_GetObjectItem(item, "result");
 	if (value && value->valuestring) {
-		if(strstr(value->string, "es")) {
-			msg->Result = true;
+		if(strstr(value->valuestring, "es")) {
+			strcpy(msg->result, "Yes");
 		} else {
-			msg->Result = false;
+			strcpy(msg->result, "No");
 		}	
 	}
 
@@ -240,18 +248,18 @@ Message *message_from_json(char *json) {
 	value = cJSON_GetObjectItem(item, "accepted");
 	if (value) {
 		if(strstr(value->valuestring, "es")) {
-			msg->Accepted = true;
+			strcpy(msg->accepted, "Yes");
 		} else {
-			msg->Accepted = false;
+			strcpy(msg->accepted, "No");;
 		}		
 	}
 	
 	value = cJSON_GetObjectItem(item, "guessNumber");
 	if (value) {
 		if(strstr(value->valuestring, "es")) {
-			msg->Winner = true;
+			strcpy(msg->winner, "Yes");
 		} else {
-			msg->Winner= false;
+			strcpy(msg->winner, "No");
 		}	
 	}
 	

@@ -42,13 +42,13 @@ int socket_dial(const char* host, const char* port) {
 	for (p = res; p != NULL && fd < 0; p = p->ai_next) {
 		/* create socket */
 		if ((fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol)) < 0) {
-			fprintf(stderr, "socket failed: %s\n", strerror(errno));
+			//fprintf(stderr, "socket failed: %s\n", strerror(errno));
 			continue;
 		}
 
 		/* connect to host */
 		if (connect(fd, p->ai_addr, p->ai_addrlen) < 0) {
-			fprintf(stderr, "connect failed: %s\n", strerror(errno));
+			//fprintf(stderr, "connect failed: %s\n", strerror(errno));
 			close(fd);
 			fd = -1;
 			continue;
@@ -58,7 +58,7 @@ int socket_dial(const char* host, const char* port) {
 		if (fd != -1) {
 			char ipstr[INET6_ADDRSTRLEN];
 			inet_ntop(p->ai_family, get_in_addr((struct sockaddr *)p->ai_addr), ipstr, sizeof ipstr);
-			printf("connecting to %s\n", ipstr);
+			//printf("connecting to %s\n", ipstr);
 		}
 	}
 

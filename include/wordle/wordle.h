@@ -34,7 +34,7 @@ typedef struct Message {
 	Type type;
 	char guess[SMALL_BUFSIZ];
 	char text[BUFSIZ];
-	bool Result;
+	char result[10];
 	char client[SMALL_BUFSIZ];
 	char server[SMALL_BUFSIZ];
 	char port[SMALL_BUFSIZ];
@@ -45,12 +45,13 @@ typedef struct Message {
 	int round;
 	int rounds_remaining;
 	int guess_number;
-	bool Accepted;
-	bool Winner;
+	char accepted[10];
+	char winner[10];
 } Message;
 
 
 char *message_to_json(Message *, Type);
-Message *message_from_command(char *);
+cJSON *get_message_type(cJSON *, Message *);
+Message *message_from_command(char *, char *);
 Message *message_from_json(char *);
 #endif
