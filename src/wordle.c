@@ -22,10 +22,26 @@ char *message_to_json(Message *msg, Type type) {
 			cJSON_AddStringToObject(items, "Result", msg->result);
 			cJSON_AddItemToObject(json, "JoinResult", items);
 			break;
-		case START_GAME:
+		case START_INSTANCE:
 			cJSON_AddStringToObject(items, "Server", msg->server);
 			cJSON_AddStringToObject(items, "Port", msg->port);
 			cJSON_AddNumberToObject(items, "Nonce", msg->nonce);
+			cJSON_AddItemToObject(json, "StartInstance", items);
+			break;
+		case JOIN_INSTANCE:
+			cJSON_AddStringToObject(items, "Name", msg->name);
+			cJSON_AddNumberToObject(items, "Nonce", msg->nonce);
+			cJSON_AddItemToObject(json, "JoinInstance", items);
+			break;
+		case JOIN_INSTANCE_RESULT:
+			cJSON_AddStringToObject(items, "Name", msg->name);
+			cJSON_AddStringToObject(items, "Result", msg->result);
+			cJSON_AddNumberToObject(items, "Nonce", msg->nonce);
+			cJSON_AddItemToObject(json, "JoinInstanceResult", items);
+			break;
+		case START_GAME:
+			cJSON_AddNumberToObject(items, "Rounds", msg->rounds);
+			// TODO list of players
 			cJSON_AddItemToObject(json, "StartGame", items);
 			break;
 		default:
@@ -61,28 +77,28 @@ cJSON *get_message_type(cJSON *object, Message *msg) {
 		return cJSON_GetObjectItem(object, "joinResult");
 	}
 
+	// JOIN_INSTANCE
+	if(cJSON_HasObjectItem(object, "joinInstance")) {
+		msg->type = JOIN_INSTANCE;
+		return cJSON_GetObjectItem(object, "joinInstance");
+	}
+
+	// JOIN_INSTANCE_RESULT
+	if(cJSON_HasObjectItem(object, "joinInstanceResult")) {
+		msg->type = JOIN_INSTANCE_RESULT;
+		return cJSON_GetObjectItem(object, "joinInstanceResult");
+	}
+
+	// START_INSTANCE
+	if(cJSON_HasObjectItem(object, "startInstance")) {
+		msg->type = START_INSTANCE;
+		return cJSON_GetObjectItem(object, "startInstance");
+	}
+
 	// START_GAME
 	if(cJSON_HasObjectItem(object, "startGame")) {
 		msg->type = START_GAME;
 		return cJSON_GetObjectItem(object, "startGame");
-	}
-
-	// JOIN_GAME
-	if(cJSON_HasObjectItem(object, "joinGame")) {
-		msg->type = JOIN_GAME;
-		return cJSON_GetObjectItem(object, "joinGame");
-	}
-
-	// JOIN_GAME_RESULT
-	if(cJSON_HasObjectItem(object, "joinGameResult")) {
-		msg->type = JOIN_GAME_RESULT;
-		return cJSON_GetObjectItem(object, "joinGameResult");
-	}
-
-	// BEGIN_GAME - ask about name
-	if(cJSON_HasObjectItem(object, "beginGame")) {
-		msg->type = BEGIN_GAME;
-		return cJSON_GetObjectItem(object, "beginGame");
 	}
 
 	// START_ROUND
@@ -127,16 +143,15 @@ cJSON *get_message_type(cJSON *object, Message *msg) {
 		return cJSON_GetObjectItem(object, "endGame");
 	}
 
-
 	return NULL;
-
 }
 
 Message *message_from_command(char *commands, char *name) {
-
 	Message *msg = calloc(1, sizeof(Message));
 	char *cmd = strtok(commands, " \n");
+
 	*cmd = tolower(cmd[0]);
+
 	if (!strcmp(cmd, "join")) {
 		strcpy(msg->name, name);
 		strcpy(msg->client, CLIENT);
@@ -149,10 +164,23 @@ Message *message_from_command(char *commands, char *name) {
 		strcpy(msg->text, text);
 		msg->type = CHAT;
 
+	} else if (!strcmp(cmd, "joinResult")) {
+
+		char *result = strtok(NULL, "\n");
+		strcpy(msg->name, name);
+		strcpy(msg->result, result);
+		msg->type = JOIN_RESULT;
+
+
+	} else if (!strcmp(cmd, "startGame")) {
+		msg->rounds = atoi(strtok(NULL, "\n"));
+		msg->type = START_GAME;
+		// TODO arry of players
+
 	} else {
 		return NULL;
 	}
-
+	printf("%d\n", msg->type);
 	return msg;
 
 

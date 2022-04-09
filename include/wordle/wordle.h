@@ -16,10 +16,10 @@ typedef enum {
 	CHAT,
 	JOIN,
 	JOIN_RESULT,
+	START_INSTANCE,
+	JOIN_INSTANCE,
+	JOIN_INSTANCE_RESULT,
 	START_GAME,
-	JOIN_GAME,
-	JOIN_GAME_RESULT,
-	BEGIN_GAME,
 	START_ROUND,
 	PROMPT,
 	GUESS,
@@ -43,6 +43,7 @@ typedef struct Message {
 	cJSON *players;
 	int word_length;
 	int round;
+	int rounds;
 	int rounds_remaining;
 	int guess_number;
 	char accepted[10];

@@ -53,15 +53,16 @@ int main(int argc, char *argv[]) {
    	free(str);
 	
 
-
+	printf("first fd %d\n", fd);
 	client_info.fd = fd;
 	pthread_t thread;
 	pthread_create(&thread, NULL, msg_thread, &client_info);
 
 	while (1) {
-		if (recv(fd, buffer, BUFSIZ, 0) <= 0) { puts("error"); exit(0); }
+		if (recv(fd, buffer, BUFSIZ, 0) <= 0) { printf("error %d", fd); exit(0); }
 		//printf("%s|\n", buffer);
 		Message *msg = message_from_json(buffer);
+		//printf("%d\n", msg->type);
 		if (msg->type == CHAT) {
 			printf("(%s): %s\n", msg->name, msg->text);
 		}
@@ -74,7 +75,27 @@ int main(int argc, char *argv[]) {
 				exit(0);
 			}
 		}
-		
+	
+		if (msg->type == START_INSTANCE) {
+			printf("join %s on port %s with id %d\n", msg->server, msg->port, msg->nonce);
+			Message m;
+			m.nonce = msg->nonce;
+			strcpy(m.name, name);
+			m.type = JOIN_INSTANCE;
+			str = message_to_json(&m, JOIN_INSTANCE);
+			close(fd);
+			fd = socket_dial(msg->server, msg->port);
+			printf("new fd %d \n", fd);
+			send(fd, str, strlen(str) + 1, 0);
+			free(str);
+			//usleep(10000);
+		}
+
+		if (msg->type == START_GAME) {
+			puts("got start game");
+		}
+	
+
 		free(msg);
 		
 	}
