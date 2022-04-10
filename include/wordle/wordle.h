@@ -52,7 +52,7 @@ typedef struct Message {
 
 
 char *message_to_json(Message *, Type);
-cJSON *get_message_type(cJSON *, Message *);
+void get_message_type(char *, Message *);
 Message *message_from_command(char *, char *);
 Message *message_from_json(char *);
 #endif

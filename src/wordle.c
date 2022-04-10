@@ -6,61 +6,77 @@ char *message_to_json(Message *msg, Type type) {
 	cJSON *json = cJSON_CreateObject();
 	cJSON *items = cJSON_CreateObject();
 
+
 	switch (type) {
 		case JOIN:	
 			cJSON_AddStringToObject(items, "Name", msg->name);
 			cJSON_AddStringToObject(items, "Client", msg->client);
-			cJSON_AddItemToObject(json, "join", items); 
+
+			cJSON_AddItemToObject(json, "Data", items); 
+			cJSON_AddStringToObject(json, "MessageType", "join");
 			break;
 		case CHAT:
 			cJSON_AddStringToObject(items, "Name", msg->name);
 			cJSON_AddStringToObject(items, "Text", msg->text);
-			cJSON_AddItemToObject(json, "chat", items);
+
+			cJSON_AddItemToObject(json, "Data", items); 
+			cJSON_AddStringToObject(json, "MessageType", "chat");
 		    break;
 		case JOIN_RESULT:	
 			cJSON_AddStringToObject(items, "Name", msg->name);
 			cJSON_AddStringToObject(items, "Result", msg->result);
-			cJSON_AddItemToObject(json, "JoinResult", items);
+			cJSON_AddItemToObject(json, "Data", items); 
+			cJSON_AddStringToObject(json, "MessageType", "JoinResult");
+
+
 			break;
 		case START_INSTANCE:
 			cJSON_AddStringToObject(items, "Server", msg->server);
 			cJSON_AddStringToObject(items, "Port", msg->port);
 			cJSON_AddNumberToObject(items, "Nonce", msg->nonce);
-			cJSON_AddItemToObject(json, "StartInstance", items);
+			cJSON_AddItemToObject(json, "Data", items); 
+			cJSON_AddStringToObject(json, "MessageType", "StartInstance");
 			break;
 		case JOIN_INSTANCE:
 			cJSON_AddStringToObject(items, "Name", msg->name);
 			cJSON_AddNumberToObject(items, "Nonce", msg->nonce);
-			cJSON_AddItemToObject(json, "JoinInstance", items);
+			cJSON_AddItemToObject(json, "Data", items); 
+			cJSON_AddStringToObject(json, "MessageType", "JoinInstance");
+
 			break;
 		case JOIN_INSTANCE_RESULT:
 			cJSON_AddStringToObject(items, "Name", msg->name);
 			cJSON_AddStringToObject(items, "Result", msg->result);
 			cJSON_AddNumberToObject(items, "Nonce", msg->nonce);
-			cJSON_AddItemToObject(json, "JoinInstanceResult", items);
+			cJSON_AddItemToObject(json, "Data", items); 
+			cJSON_AddStringToObject(json, "MessageType", "JoinInstanceResult");		
 			break;
 		case START_GAME:
 			cJSON_AddNumberToObject(items, "Rounds", msg->rounds);
 			// TODO list of players
-			cJSON_AddItemToObject(json, "StartGame", items);
+			cJSON_AddItemToObject(json, "Data", items); 
+			cJSON_AddStringToObject(json, "MessageType", "StartGame");
 			break;
 		case START_ROUND:
 			cJSON_AddNumberToObject(items, "WordLength", msg->word_length);
 			cJSON_AddNumberToObject(items, "Round", msg->round);
 			cJSON_AddNumberToObject(items, "RoundsRemaining", msg->rounds_remaining);
 			// TODO list of playersi
-			cJSON_AddItemToObject(json, "StartRound", items);
+	 		cJSON_AddItemToObject(json, "Data", items); 
+			cJSON_AddStringToObject(json, "MessageType", "StartRound");
 			break;
 		case PROMPT:
 			cJSON_AddNumberToObject(items, "WordLength", msg->word_length);
 			cJSON_AddStringToObject(items, "Name", msg->name);
 			cJSON_AddNumberToObject(items, "GuessNumber", msg->guess_number);
-			cJSON_AddItemToObject(json, "PromptForGuess", items);
+			cJSON_AddItemToObject(json, "Data", items); 
+			cJSON_AddStringToObject(json, "MessageType", "PromptForGuess");
 			break;
 		case GUESS:
 			cJSON_AddStringToObject(items, "Guess", msg->guess);
 			cJSON_AddStringToObject(items, "Name", msg->name);
-			cJSON_AddItemToObject(json, "Guess", items);
+			cJSON_AddItemToObject(json, "Data", items); 
+			cJSON_AddStringToObject(json, "MessageType", "Guess");
 			break;
 		
 		default:
@@ -74,95 +90,79 @@ char *message_to_json(Message *msg, Type type) {
 	return str;
 }
 
-cJSON *get_message_type(cJSON *object, Message *msg) {
+void get_message_type(char *object, Message *msg) {
+	*object = tolower(object[0]);
 
 	// JOIN
-	if(cJSON_HasObjectItem(object, "join")) {
+	if(!strcmp(object, "join")) {
 		msg->type = JOIN;
-
-		return cJSON_GetObjectItem(object, "join");
 	}
 
 	// CHAT
-	if(cJSON_HasObjectItem(object, "Chat")) {
+	if(!strcmp(object, "chat")) {
 
 		msg->type = CHAT;
-		return cJSON_GetObjectItem(object, "Chat");
 	}
 	
 	// JOIN_RESULT
-	if(cJSON_HasObjectItem(object, "joinResult")) {
+	if(!strcmp(object, "joinResult")) {
 		msg->type = JOIN_RESULT;
-		return cJSON_GetObjectItem(object, "joinResult");
 	}
 
 	// JOIN_INSTANCE
-	if(cJSON_HasObjectItem(object, "joinInstance")) {
+	if(!strcmp(object, "joinInstance")) {
 		msg->type = JOIN_INSTANCE;
-		return cJSON_GetObjectItem(object, "joinInstance");
 	}
 
 	// JOIN_INSTANCE_RESULT
-	if(cJSON_HasObjectItem(object, "joinInstanceResult")) {
+	if(!strcmp(object, "joinInstanceResult")) {
 		msg->type = JOIN_INSTANCE_RESULT;
-		return cJSON_GetObjectItem(object, "joinInstanceResult");
 	}
 
 	// START_INSTANCE
-	if(cJSON_HasObjectItem(object, "startInstance")) {
+	if(!strcmp(object, "startInstance")) {
 		msg->type = START_INSTANCE;
-		return cJSON_GetObjectItem(object, "startInstance");
 	}
 
 	// START_GAME
-	if(cJSON_HasObjectItem(object, "startGame")) {
+	if(!strcmp(object, "startGame")) {
 		msg->type = START_GAME;
-		return cJSON_GetObjectItem(object, "startGame");
 	}
 
 	// START_ROUND
-	if(cJSON_HasObjectItem(object, "startRound")) {
+	if(!strcmp(object, "startRound")) {
 		msg->type = START_ROUND;
-		return cJSON_GetObjectItem(object, "startRound");
 	}
 
 	// PROMPT
-	if(cJSON_HasObjectItem(object, "promptForGuess")) {
+	if(!strcmp(object, "promptForGuess")) {
 		msg->type = PROMPT;
-		return cJSON_GetObjectItem(object, "promptForGuess");
 	}
 
 	// GUESS
-	if(cJSON_HasObjectItem(object, "guess")) {
+	if(!strcmp(object, "guess")) {
 		msg->type = GUESS;
-		return cJSON_GetObjectItem(object, "guess");
 	}
 
 	// GUESS_RESPONSE
-	if(cJSON_HasObjectItem(object, "guessResponse")) {
+	if(!strcmp(object, "guessResponse")) {
 		msg->type = GUESS_RESPONSE;
-		return cJSON_GetObjectItem(object, "guessResponse");
 	}
 
 	// GUESS_RESULT
-	if(cJSON_HasObjectItem(object, "guessResult")) {
+	if(!strcmp(object, "guessResult")) {
 		msg->type = GUESS_RESULT;
-		return cJSON_GetObjectItem(object, "guessResult");
 	}
 
 	// END_ROUND
-	if(cJSON_HasObjectItem(object, "endRound")) {
+	if(!strcmp(object, "endRound")) {
 		msg->type = END_ROUND;
-		return cJSON_GetObjectItem(object, "endRound");
 	}
 
 	// END_GAME
-	if(cJSON_HasObjectItem(object, "endGame")) {
+	if(!strcmp(object, "endGame")) {
 		msg->type = END_GAME;
-		return cJSON_GetObjectItem(object, "endGame");
 	}
-
-	return NULL;
 }
 
 Message *message_from_command(char *commands, char *name) {
@@ -228,8 +228,12 @@ Message *message_from_json(char *json) {
 	Message *msg = calloc(1, sizeof(Message));
 
 	cJSON *message = cJSON_Parse(json);
-	cJSON *item = get_message_type(message, msg);
-
+	cJSON *item = cJSON_GetObjectItem(message, "MessageType");
+	if (!item) return NULL;
+	if (item && item->valuestring) { 
+		get_message_type(item->valuestring, msg);
+	}
+	item = cJSON_GetObjectItem(message, "Data");
 
 	cJSON *value = NULL;
 

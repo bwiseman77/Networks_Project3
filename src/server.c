@@ -10,7 +10,7 @@ void send_message(char *str, char *name, int fd) {
 	Message *msg = message_from_command(str, name);
 	//printf("s: %d\n", msg->type);
 	s = message_to_json(msg, msg->type);
-	printf("%s\n", s);
+	//printf("reponse: %s\n", s);
 	send(fd, s, strlen(s) + 1, 0);
 	free(s);
 	free(msg);
@@ -79,7 +79,7 @@ void *client_thread(void *arg) {
 		
 		Message *msg = message_from_json(buffer);
 		//Message response;
-		printf("%d\n", msg->type);	
+		printf("type: %d\n", msg->type);	
 		/* send to everyone but sender */
 		if (msg->type == CHAT) {
 			for (int i = 0; i < Players; i++) {
