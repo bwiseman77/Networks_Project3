@@ -61,8 +61,10 @@ int main(int argc, char *argv[]) {
 	while (1) {
 		if (recv(fd, buffer, BUFSIZ, 0) <= 0) { printf("error %d", fd); exit(0); }
 		//printf("%s|\n", buffer);
+
 		Message *msg = message_from_json(buffer);
 		//printf("%d\n", msg->type);
+
 		if (msg->type == CHAT) {
 			printf("(%s): %s\n", msg->name, msg->text);
 		}
@@ -93,6 +95,10 @@ int main(int argc, char *argv[]) {
 
 		if (msg->type == START_GAME) {
 			puts("got start game");
+		}
+
+		if (msg->type == START_ROUND) {
+			printf("%d %d %d\n", msg->word_length, msg->round, msg->rounds_remaining);
 		}
 	
 

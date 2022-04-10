@@ -44,6 +44,25 @@ char *message_to_json(Message *msg, Type type) {
 			// TODO list of players
 			cJSON_AddItemToObject(json, "StartGame", items);
 			break;
+		case START_ROUND:
+			cJSON_AddNumberToObject(items, "WordLength", msg->word_length);
+			cJSON_AddNumberToObject(items, "Round", msg->round);
+			cJSON_AddNumberToObject(items, "RoundsRemaining", msg->rounds_remaining);
+			// TODO list of playersi
+			cJSON_AddItemToObject(json, "StartRound", items);
+			break;
+		case PROMPT:
+			cJSON_AddNumberToObject(items, "WordLength", msg->word_length);
+			cJSON_AddStringToObject(items, "Name", msg->name);
+			cJSON_AddNumberToObject(items, "GuessNumber", msg->guess_number);
+			cJSON_AddItemToObject(json, "PromptForGuess", items);
+			break;
+		case GUESS:
+			cJSON_AddStringToObject(items, "Guess", msg->guess);
+			cJSON_AddStringToObject(items, "Name", msg->name);
+			cJSON_AddItemToObject(json, "Guess", items);
+			break;
+		
 		default:
 			puts("bad type");
 			return NULL;
@@ -177,10 +196,29 @@ Message *message_from_command(char *commands, char *name) {
 		msg->type = START_GAME;
 		// TODO arry of players
 
+	} else if (!strcmp(cmd, "startRound")) {
+		msg->word_length = atoi(strtok(NULL, " "));
+		msg->round = atoi(strtok(NULL, " "));
+		msg->rounds_remaining = atoi(strtok(NULL, " "));
+		// TODO arry of players
+		msg->type = START_ROUND;
+
+	} else if (!strcmp(cmd, "prompt")) {
+		msg->word_length = atoi(strtok(NULL, " "));
+		strcpy(msg->name, name);
+		msg->guess_number = atoi(strtok(NULL, " "));
+		msg->type = PROMPT;
+
+	} else if (!strcmp(cmd, "guess")) {
+		strcpy(msg->name, name);
+		char *guess = strtok(NULL, "\n");
+		strcpy(msg->guess, guess);
+		msg->type = GUESS;
+
 	} else {
 		return NULL;
 	}
-	printf("%d\n", msg->type);
+
 	return msg;
 
 
@@ -191,6 +229,7 @@ Message *message_from_json(char *json) {
 
 	cJSON *message = cJSON_Parse(json);
 	cJSON *item = get_message_type(message, msg);
+
 
 	cJSON *value = NULL;
 
@@ -282,7 +321,7 @@ Message *message_from_json(char *json) {
 		}		
 	}
 	
-	value = cJSON_GetObjectItem(item, "guessNumber");
+	value = cJSON_GetObjectItem(item, "winner");
 	if (value) {
 		if(strstr(value->valuestring, "es")) {
 			strcpy(msg->winner, "Yes");
@@ -292,7 +331,6 @@ Message *message_from_json(char *json) {
 	}
 	
 	cJSON_Delete(message);
-
 
 	return msg;
 }

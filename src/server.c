@@ -2,7 +2,7 @@
 #include "wordle/server_socket.h"
 #include <stdlib.h>
 
-#define MAX_PLAYERS 50
+#define MAX_PLAYERS 10
 
 void send_message(char *str, char *name, int fd) {
 	//printf("%s|\n", str);
@@ -10,7 +10,7 @@ void send_message(char *str, char *name, int fd) {
 	Message *msg = message_from_command(str, name);
 	//printf("s: %d\n", msg->type);
 	s = message_to_json(msg, msg->type);
-	//printf("%s\n", s);
+	printf("%s\n", s);
 	send(fd, s, strlen(s) + 1, 0);
 	free(s);
 	free(msg);
@@ -25,15 +25,40 @@ typedef struct Client_info {
 	bool isTurn;
 	char name[256];
 	int nonce;
+	int guesses;
 } Client_info; 
+
+typedef struct Guess_info {
+	char name[256];
+	int number;
+	int time;
+	bool correct;
+	char guess[256];
+	char gyb[256];
+} Guess_info;
+
+typedef struct Game_info {
+	int word_length;
+	char *word;
+	bool winner;
+	int players;
+	int guessed_players;
+} Game_info;
 
 /* Globals */
 
 pthread_mutex_t Lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_t threads[MAX_PLAYERS];
 Client_info Clients[MAX_PLAYERS];
+Guess_info Guesses[MAX_PLAYERS];
+
 int Players = 0;
 bool Game = false;
+int word_length = 5;
+char *word;
+bool winner = false;
+int Players_that_guessed = 0;
+
 
 /* Thread Functions */
 
@@ -63,6 +88,40 @@ void *client_thread(void *arg) {
 					send(Clients[i].fd, buffer, BUFSIZ, 0);
 				}
 			}
+		}
+
+		if (msg->type == GUESS) {
+			printf("%s\n", msg->guess);
+
+			char byg[word_length];
+			byg[word_length] = '\0';
+
+			char *g = msg->guess;
+			for (int i = 0; i < word_length; i++) {
+				// check green
+				if (word[i] == g[i]) {
+					byg[i] = 'G';
+					continue;
+				}
+				
+				// check yellow and black
+				bool B = true;
+				for (int j = 0; j < word_length; j++) {
+					if (word[j] == g[i]) {
+						byg[i] = 'Y';
+						B = false;
+					}
+				}
+
+				if (B) {
+					byg[i] = 'B';
+				}
+			}
+			
+			printf("guess: %s word: %s result: %s\n", g, word, byg);
+			if (!strcmp(g, word)) winner = true;
+			Players_that_guessed++;
+
 		}
 
 		free(msg);
@@ -100,38 +159,42 @@ void * game_thread(void * arg) {
 	}
 
 	/* play game */
-	int MaxRounds = 1;
+	int MaxRounds = 2;
 	int currRound = 1;
-	int word_length = 5;
-	char *word = "pizza";
-	bool winner = false;
-	char *str;
-
+	word = "pizza";
+	/* send start game */
 	for (int i = 0; i < Players; i++) {
 		sprintf(buff, "startGame %d\n", MaxRounds);
 		send_message(buff, NULL, Clients[i].fd);	
-
 	}
 
-
-	// TODO: start game
 	/* rounds */
 	while (currRound <= MaxRounds) {
+		
+		/* send start round */
+		for (int i = 0; i < Players; i++) {
+			sprintf(buff, "startRound %d %d %d\n", word_length, currRound, MaxRounds - currRound + 1);
+			send_message(buff, NULL, Clients[i].fd);
+		}
+		
 		winner = false;
 		/* curr round */
-		// TODO start round
 		while(!winner) {
-			for (int i = 0; i < Players; i++) {
-				//send(Clients[i].fd, buffer, BUFSIZ, 0);
-			winner = true;
 
+			/* prompt for guess */
+			for (int i = 0; i < Players; i++) {
+				sprintf(buff, "prompt %d %d", word_length, Clients[i].guesses);
+				send_message(buff, Clients[i].name, Clients[i].fd);
 			}
 
-
+			/* wait for players to guess */
+			while(Players_that_guessed < Players);
+			Players_that_guessed = 0;
+	
 		}
 
-
-
+		currRound++;
+		word = "hello";
 	}	
 
 	return NULL;
@@ -165,36 +228,17 @@ int main(int argc, char *argv[]) {
 		free(s);
 		
 		if (msg->type == JOIN) {
-	
-			Message response;
-			char *str;
-			puts("join");
 			if (Players >= num_players) {	
 
-				/* send No response to extra players */
-				/*
-				strcpy(response.name, msg->name);
-				strcpy(response.result, "No");	
-				str = message_to_json(&response, JOIN_RESULT);
-				send(client_fd, str, strlen(str) + 1, 0);
-				free(str);
-				*/
-				
+				/* send No response to extra players */				
 				sprintf(buffer, "joinResult No\n");
 				send_message(buffer, msg->name, client_fd);
 
 			} else { 
 		
 				/* send Yes reponse to players */
-				/*strcpy(response.name, msg->name);
-				strcpy(response.result, "Yes");	
-				str = message_to_json(&response, JOIN_RESULT);
-				send(client_fd, str, strlen(str) + 1, 0);
-				free(str);
-				*/
 				sprintf(buffer, "joinResult Yes\n");
 				send_message(buffer, msg->name, client_fd);
-
 
 				/* add to list of clients, and start thread */
 				Clients[Players].fd = client_fd;
@@ -202,6 +246,7 @@ int main(int argc, char *argv[]) {
 				Clients[Players].isTurn = false;
 				Clients[Players].score = 0;
 				Clients[Players].nonce = Players;
+				Clients[Players].guesses = 0;
 				strcpy(Clients[Players].name, msg->name);
 				
 				pthread_create(&threads[Players], NULL, client_thread, &Clients[Players]);
@@ -219,8 +264,7 @@ int main(int argc, char *argv[]) {
 
 					while(!Game);
 
-					/* send clients to game port */
-					
+					/* send clients to game port */			
 					Message start;
 					strcpy(start.server, "localhost");
 					strcpy(start.port, "43000");
@@ -228,9 +272,8 @@ int main(int argc, char *argv[]) {
 					for (int i = 0; i < Players; i++) {
 						start.nonce = Clients[i].nonce;
 						char *s = message_to_json(&start, START_INSTANCE);
-					   	puts("try");	
+
 						if (Clients[i].inGame) {
-							puts("send join");
 							send(Clients[i].fd, s, strlen(s) + 1, 0);
 						}
 
