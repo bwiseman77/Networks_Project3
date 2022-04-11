@@ -8,6 +8,10 @@ typedef struct Client_info {
 
 } Client_info; 
 
+Client_info client_info;
+
+pthread_mutex_t Lock = PTHREAD_MUTEX_INITIALIZER;
+
 void *msg_thread(void *arg) {
 	char buffer[BUFSIZ];
 	Client_info *ci = (Client_info *) arg;
@@ -18,7 +22,10 @@ void *msg_thread(void *arg) {
 
 		if (msg) {
 			char *str = message_to_json(msg, msg->type);
+
+			pthread_mutex_lock(&Lock);
 			send(ci->fd, str, strlen(str) + 1, 0);
+			pthread_mutex_unlock(&Lock);
 			free(str);
 			free(msg);
 		}
@@ -33,9 +40,7 @@ int main(int argc, char *argv[]) {
 	char *host = argv[2];
 	char *port = argv[3];
 
-	Client_info client_info;
 	strcpy(client_info.name, name);
-	
 
 	char buffer[BUFSIZ];
 
@@ -53,14 +58,16 @@ int main(int argc, char *argv[]) {
    	free(str);
 	
 
-	printf("first fd %d\n", fd);
+	//printf("first fd %d\n", fd);
 	client_info.fd = fd;
 	pthread_t thread;
 	pthread_create(&thread, NULL, msg_thread, &client_info);
 
 	while (1) {
-		if (recv(fd, buffer, BUFSIZ, 0) <= 0) { printf("error %d", fd); exit(0); }
+		int bytes = 0;
+		if ((bytes = recv(fd, buffer, BUFSIZ, 0)) <= 0) { printf("error %d\n", fd); exit(0); }
 		//printf("%s|\n", buffer);
+		//printf("%d %ld\n", bytes, strlen(buffer));
 
 		Message *msg = message_from_json(buffer);
 		//printf("%d\n", msg->type);
@@ -80,6 +87,7 @@ int main(int argc, char *argv[]) {
 	
 		if (msg->type == START_INSTANCE) {
 			printf("join %s on port %s with id %d\n", msg->server, msg->port, msg->nonce);
+			pthread_mutex_lock(&Lock);
 			Message m;
 			m.nonce = msg->nonce;
 			strcpy(m.name, name);
@@ -87,21 +95,51 @@ int main(int argc, char *argv[]) {
 			str = message_to_json(&m, JOIN_INSTANCE);
 			close(fd);
 			fd = socket_dial(msg->server, msg->port);
-			printf("new fd %d \n", fd);
+			client_info.fd = fd;
+			//printf("new fd %d \n", fd);
+			
 			send(fd, str, strlen(str) + 1, 0);
 			free(str);
+			pthread_mutex_unlock(&Lock);
 			//usleep(10000);
 		}
 
 		if (msg->type == START_GAME) {
-			puts("got start game");
+			puts("starting game");
+			//printf("%s\n", buffer);
+			print_info(msg, START_GAME);
 		}
 
 		if (msg->type == START_ROUND) {
-			printf("%d %d %d\n", msg->word_length, msg->round, msg->rounds_remaining);
+			printf("Word Length: %d Round: %d Rounds Left: %d\n", msg->word_length, msg->round, msg->rounds_remaining);
+			print_info(msg, START_ROUND);	
 		}
 	
+		if (msg->type == GUESS_RESPONSE) {
+			if (strstr(msg->accepted, "es")) {
+				puts("accepted guess");
+			} else {
+				puts("guess not accepted");
+			}
+		}
 
+		if (msg->type == END_ROUND) {
+			puts("round over");
+			print_info(msg, END_ROUND);
+		}
+
+		if (msg->type == END_GAME) {
+			puts("game over");
+			print_info(msg, END_GAME);
+		}
+
+		if (msg->type == GUESS_RESULT) {
+			print_info(msg, GUESS_RESULT);	
+		}
+
+		if (msg->type == PROMPT) {
+			puts("make your guess");
+		}
 		free(msg);
 		
 	}

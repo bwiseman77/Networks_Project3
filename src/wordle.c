@@ -11,14 +11,12 @@ char *message_to_json(Message *msg, Type type) {
 		case JOIN:	
 			cJSON_AddStringToObject(items, "Name", msg->name);
 			cJSON_AddStringToObject(items, "Client", msg->client);
-
 			cJSON_AddItemToObject(json, "Data", items); 
 			cJSON_AddStringToObject(json, "MessageType", "join");
 			break;
 		case CHAT:
 			cJSON_AddStringToObject(items, "Name", msg->name);
 			cJSON_AddStringToObject(items, "Text", msg->text);
-
 			cJSON_AddItemToObject(json, "Data", items); 
 			cJSON_AddStringToObject(json, "MessageType", "chat");
 		    break;
@@ -27,8 +25,6 @@ char *message_to_json(Message *msg, Type type) {
 			cJSON_AddStringToObject(items, "Result", msg->result);
 			cJSON_AddItemToObject(json, "Data", items); 
 			cJSON_AddStringToObject(json, "MessageType", "JoinResult");
-
-
 			break;
 		case START_INSTANCE:
 			cJSON_AddStringToObject(items, "Server", msg->server);
@@ -42,7 +38,6 @@ char *message_to_json(Message *msg, Type type) {
 			cJSON_AddNumberToObject(items, "Nonce", msg->nonce);
 			cJSON_AddItemToObject(json, "Data", items); 
 			cJSON_AddStringToObject(json, "MessageType", "JoinInstance");
-
 			break;
 		case JOIN_INSTANCE_RESULT:
 			cJSON_AddStringToObject(items, "Name", msg->name);
@@ -53,7 +48,7 @@ char *message_to_json(Message *msg, Type type) {
 			break;
 		case START_GAME:
 			cJSON_AddNumberToObject(items, "Rounds", msg->rounds);
-			// TODO list of players
+			cJSON_AddItemToObject(items, "PlayerInfo", msg->players);
 			cJSON_AddItemToObject(json, "Data", items); 
 			cJSON_AddStringToObject(json, "MessageType", "StartGame");
 			break;
@@ -61,7 +56,7 @@ char *message_to_json(Message *msg, Type type) {
 			cJSON_AddNumberToObject(items, "WordLength", msg->word_length);
 			cJSON_AddNumberToObject(items, "Round", msg->round);
 			cJSON_AddNumberToObject(items, "RoundsRemaining", msg->rounds_remaining);
-			// TODO list of playersi
+			cJSON_AddItemToObject(items, "PlayerInfo", msg->players);
 	 		cJSON_AddItemToObject(json, "Data", items); 
 			cJSON_AddStringToObject(json, "MessageType", "StartRound");
 			break;
@@ -78,7 +73,31 @@ char *message_to_json(Message *msg, Type type) {
 			cJSON_AddItemToObject(json, "Data", items); 
 			cJSON_AddStringToObject(json, "MessageType", "Guess");
 			break;
-		
+		case GUESS_RESPONSE:
+			cJSON_AddStringToObject(items, "Guess", msg->guess);
+			cJSON_AddStringToObject(items, "Name", msg->name);
+			cJSON_AddStringToObject(items, "Accepted", msg->accepted);
+			cJSON_AddItemToObject(json, "Data", items); 
+			cJSON_AddStringToObject(json, "MessageType", "GuessResponse");
+			break;
+		case GUESS_RESULT:
+			cJSON_AddStringToObject(items, "Winner", "Maybe");
+			cJSON_AddItemToObject(items, "PlayerInfo", msg->players);
+			cJSON_AddStringToObject(json, "MessageType", "GuessResult");
+			break;
+		case END_ROUND:
+			cJSON_AddNumberToObject(items, "RoundsRemaining", msg->rounds_remaining);
+			cJSON_AddItemToObject(items, "PlayerInfo", msg->players);
+			cJSON_AddItemToObject(json, "Data", items); 
+			cJSON_AddStringToObject(json, "MessageType", "EndRound");
+			break;
+		case END_GAME:
+			cJSON_AddStringToObject(items, "WinnerName", msg->winner);
+			cJSON_AddItemToObject(items, "PlayerInfo", msg->players);
+			cJSON_AddItemToObject(json, "Data", items); 
+			cJSON_AddStringToObject(json, "MessageType", "EndGame");
+			break;
+
 		default:
 			puts("bad type");
 			return NULL;
@@ -215,6 +234,26 @@ Message *message_from_command(char *commands, char *name) {
 		strcpy(msg->guess, guess);
 		msg->type = GUESS;
 
+	} else if (!strcmp(cmd, "guessResponse")) {
+		strcpy(msg->name, name);
+		char *guess = strtok(NULL, " ");
+		strcpy(msg->guess, guess);
+		char *accepted = strtok(NULL, "\n");
+		strcpy(msg->accepted, accepted);
+		msg->type = GUESS_RESPONSE;
+
+	} else if (!strcmp(cmd, "guessResult")) {
+		msg->type = GUESS_RESULT;
+
+	} else if (!strcmp(cmd, "endRound")) {
+		msg->rounds_remaining = atoi(strtok(NULL, "\n"));
+		msg->type = END_ROUND;
+
+	} else if (!strcmp(cmd, "endGame")) {
+		char *winner = strtok(NULL, "\n");
+		strcpy(msg->winner, winner);
+		msg->type = END_GAME;
+
 	} else {
 		return NULL;
 	}
@@ -333,8 +372,82 @@ Message *message_from_json(char *json) {
 			strcpy(msg->winner, "No");
 		}	
 	}
-	
+
+	value = cJSON_GetObjectItem(item, "PlayerInfo");
+	int s = cJSON_GetArraySize(value);
+	if (s) {
+		msg->players = cJSON_Duplicate(value, 1);
+	}
 	cJSON_Delete(message);
 
 	return msg;
 }
+
+void print_info(Message *msg, Type type) {
+	cJSON *value = NULL;
+	cJSON *array = msg->players;
+	cJSON *index = NULL;
+
+
+	if (type == START_GAME) {
+		puts("players in game:");	
+		cJSON_ArrayForEach(index, array) {
+			value = cJSON_GetObjectItem(index, "Name");
+			printf("Name: %s ", value->valuestring);
+			value = cJSON_GetObjectItem(index, "Number");
+			printf("id: %d\n", value->valueint);
+		}
+
+	} else if (type == START_ROUND) {
+		puts("Players Scores");
+		cJSON_ArrayForEach(index, array) {
+			value = cJSON_GetObjectItem(index, "Name");
+			printf("Name: %s ", value->valuestring);
+			value = cJSON_GetObjectItem(index, "Number");
+			printf("id: %d ", value->valueint);
+			value = cJSON_GetObjectItem(index, "Score");
+			printf("Score: %d\n", value->valueint);
+		}
+
+	} else if (type == GUESS_RESULT) {
+		puts("Players Guesses");
+		cJSON_ArrayForEach(index, array) {
+			value = cJSON_GetObjectItem(index, "Name");
+			printf("Name: %s ", value->valuestring);
+			value = cJSON_GetObjectItem(index, "Number");
+			printf("id: %d ", value->valueint);
+			value = cJSON_GetObjectItem(index, "Correct");
+			printf("Correct: %s ", value->valuestring);
+			value = cJSON_GetObjectItem(index, "ReceiptTime");
+			printf("Time: %d ", value->valueint);
+			value = cJSON_GetObjectItem(index, "Result");
+			printf("Result: %s\n", value->valuestring);
+		}
+
+	} else if (type == END_ROUND) {
+		puts("Players at end of round");
+		cJSON_ArrayForEach(index, array) {
+			value = cJSON_GetObjectItem(index, "Name");
+			printf("Name: %s ", value->valuestring);
+			value = cJSON_GetObjectItem(index, "Number");
+			printf("id: %d ", value->valueint);
+			value = cJSON_GetObjectItem(index, "Winner");
+			printf("Winner: %s ", value->valuestring);
+			value = cJSON_GetObjectItem(index, "ScoreEarned");
+			printf("Score Earned: %d\n", value->valueint);
+		}
+	} else if (type == END_GAME) {
+		puts("Final Results");
+		cJSON_ArrayForEach(index, array) {
+			value = cJSON_GetObjectItem(index, "Name");
+			printf("Name: %s ", value->valuestring);
+			value = cJSON_GetObjectItem(index, "Number");
+			printf("id: %d ", value->valueint);
+			value = cJSON_GetObjectItem(index, "Score");
+			printf("Score: %d\n", value->valueint);
+		}
+	} else {
+		
+	}
+}
+

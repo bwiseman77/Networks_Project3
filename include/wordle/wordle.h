@@ -55,4 +55,6 @@ char *message_to_json(Message *, Type);
 void get_message_type(char *, Message *);
 Message *message_from_command(char *, char *);
 Message *message_from_json(char *);
+
+void print_info(Message *, Type);
 #endif
