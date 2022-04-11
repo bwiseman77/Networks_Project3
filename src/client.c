@@ -1,5 +1,10 @@
 #include "wordle/wordle.h"
 
+
+/* definitions */
+
+#define BORDER "------------------"
+
 /* Thread Functions */
 
 typedef struct Client_info {
@@ -71,6 +76,7 @@ int main(int argc, char *argv[]) {
 
 		Message *msg = message_from_json(buffer);
 		//printf("%d\n", msg->type);
+		if (!msg) continue;
 
 		if (msg->type == CHAT) {
 			printf("(%s): %s\n", msg->name, msg->text);
@@ -105,14 +111,18 @@ int main(int argc, char *argv[]) {
 		}
 
 		if (msg->type == START_GAME) {
+			puts(BORDER);
 			puts("starting game");
 			//printf("%s\n", buffer);
 			print_info(msg, START_GAME);
+			puts(BORDER);
 		}
 
 		if (msg->type == START_ROUND) {
+			puts(BORDER);
 			printf("Word Length: %d Round: %d Rounds Left: %d\n", msg->word_length, msg->round, msg->rounds_remaining);
-			print_info(msg, START_ROUND);	
+			print_info(msg, START_ROUND);
+			puts(BORDER);	
 		}
 	
 		if (msg->type == GUESS_RESPONSE) {
@@ -124,17 +134,24 @@ int main(int argc, char *argv[]) {
 		}
 
 		if (msg->type == END_ROUND) {
+			puts(BORDER);
 			puts("round over");
 			print_info(msg, END_ROUND);
+			puts(BORDER);
 		}
 
 		if (msg->type == END_GAME) {
+			puts(BORDER);
 			puts("game over");
+			printf("%s Wins!\n", msg->winnerName);
 			print_info(msg, END_GAME);
+			puts(BORDER);
 		}
 
 		if (msg->type == GUESS_RESULT) {
+			puts(BORDER);
 			print_info(msg, GUESS_RESULT);	
+			puts(BORDER);
 		}
 
 		if (msg->type == PROMPT) {

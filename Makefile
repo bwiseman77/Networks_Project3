@@ -3,7 +3,7 @@ CFLAGS= 	-g -Wall -std=gnu99 -Iinclude -pthread
 TARGETS= 	mpwordleserver mpwordle
 
 # variables
-SERVER_OBJS = src/server.o src/server_socket.o src/cJSON.o src/wordle.o
+SERVER_OBJS = src/server.o src/server_socket.o src/cJSON.o src/wordle.o src/wordle_server.o
 CLIENT_OBJS = src/client.o src/client_socket.o src/cJSON.o src/wordle.o
 
 all: 		$(TARGETS)
@@ -22,4 +22,4 @@ mpwordle: $(CLIENT_OBJS)
 
 clean:
 	@echo "cleaning up"
-	@rm -fr data $(SERVER_OBJS) $(CLIENT_OBJS) $(TARGETS)
+	@rm -fr $(SERVER_OBJS) $(CLIENT_OBJS) $(TARGETS)

@@ -2,11 +2,11 @@
 #include <ctype.h>
 #define CLIENT "bwisemaSgood"
 
+/* functions */
+
 char *message_to_json(Message *msg, Type type) {
 	cJSON *json = cJSON_CreateObject();
 	cJSON *items = cJSON_CreateObject();
-
-
 	switch (type) {
 		case JOIN:	
 			cJSON_AddStringToObject(items, "Name", msg->name);
@@ -83,6 +83,7 @@ char *message_to_json(Message *msg, Type type) {
 		case GUESS_RESULT:
 			cJSON_AddStringToObject(items, "Winner", "Maybe");
 			cJSON_AddItemToObject(items, "PlayerInfo", msg->players);
+			cJSON_AddItemToObject(json, "Data", items);
 			cJSON_AddStringToObject(json, "MessageType", "GuessResult");
 			break;
 		case END_ROUND:
@@ -92,7 +93,7 @@ char *message_to_json(Message *msg, Type type) {
 			cJSON_AddStringToObject(json, "MessageType", "EndRound");
 			break;
 		case END_GAME:
-			cJSON_AddStringToObject(items, "WinnerName", msg->winner);
+			cJSON_AddStringToObject(items, "WinnerName", msg->winnerName);
 			cJSON_AddItemToObject(items, "PlayerInfo", msg->players);
 			cJSON_AddItemToObject(json, "Data", items); 
 			cJSON_AddStringToObject(json, "MessageType", "EndGame");
@@ -188,6 +189,8 @@ Message *message_from_command(char *commands, char *name) {
 	Message *msg = calloc(1, sizeof(Message));
 	char *cmd = strtok(commands, " \n");
 
+	if (!cmd) return NULL;
+
 	*cmd = tolower(cmd[0]);
 
 	if (!strcmp(cmd, "join")) {
@@ -251,7 +254,7 @@ Message *message_from_command(char *commands, char *name) {
 
 	} else if (!strcmp(cmd, "endGame")) {
 		char *winner = strtok(NULL, "\n");
-		strcpy(msg->winner, winner);
+		strcpy(msg->winnerName, winner);
 		msg->type = END_GAME;
 
 	} else {
@@ -373,6 +376,12 @@ Message *message_from_json(char *json) {
 		}	
 	}
 
+	value = cJSON_GetObjectItem(item, "winnerName");
+	if (value && value->valuestring) {
+		strcpy(msg->winnerName, value->valuestring);	
+	}
+
+
 	value = cJSON_GetObjectItem(item, "PlayerInfo");
 	int s = cJSON_GetArraySize(value);
 	if (s) {
@@ -418,8 +427,8 @@ void print_info(Message *msg, Type type) {
 			printf("id: %d ", value->valueint);
 			value = cJSON_GetObjectItem(index, "Correct");
 			printf("Correct: %s ", value->valuestring);
-			value = cJSON_GetObjectItem(index, "ReceiptTime");
-			printf("Time: %d ", value->valueint);
+			//value = cJSON_GetObjectItem(index, "ReceiptTime");
+			//printf("Time: %lf ", value->valuedouble);
 			value = cJSON_GetObjectItem(index, "Result");
 			printf("Result: %s\n", value->valuestring);
 		}

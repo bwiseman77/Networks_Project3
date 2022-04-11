@@ -8,9 +8,11 @@
 #include "wordle/cJSON.h"
 #include <stdbool.h>
 
-/* Functions */
+/* definitions */
 
 #define SMALL_BUFSIZ 256
+
+/* structures */
 
 typedef enum {
 	CHAT,
@@ -48,8 +50,10 @@ typedef struct Message {
 	int guess_number;
 	char accepted[10];
 	char winner[10];
+	char winnerName[256];
 } Message;
 
+/* functions */
 
 char *message_to_json(Message *, Type);
 void get_message_type(char *, Message *);
