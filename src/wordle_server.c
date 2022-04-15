@@ -10,6 +10,22 @@ extern pthread_mutex_t Lock;
 
 /* functions */
 
+int get_words(char words[MAX_WORDS][MAX_WORD_LENGTH], char *path) {
+
+	FILE *infile = fopen(path, "r");
+	if (!infile) return -1;
+	int ind = 0;
+	while (fgets(words[ind], MAX_WORD_LENGTH, infile)) {
+		// trim newline;
+		words[ind][strlen(words[ind])-1] = '\0';
+		ind++;	
+
+	}
+
+	return ind;
+}
+
+
 cJSON *get_players(Type type) {
 	cJSON *array = cJSON_CreateArray();
 

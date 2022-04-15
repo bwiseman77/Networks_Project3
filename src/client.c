@@ -70,7 +70,7 @@ int main(int argc, char *argv[]) {
 
 	while (1) {
 		int bytes = 0;
-		if ((bytes = recv(fd, buffer, BUFSIZ, 0)) <= 0) { printf("error %d\n", fd); exit(0); }
+		if ((bytes = recv(fd, buffer, BUFSIZ, 0)) <= 0) { puts("Server Quit"); exit(0); }
 		//printf("%s|\n", buffer);
 		//printf("%d %ld\n", bytes, strlen(buffer));
 
