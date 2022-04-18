@@ -75,7 +75,7 @@ void *client_thread(void *arg) {
 			/* check if client can guess and is a valid sized guess */
 			if (!Clients[client->nonce].canGuess || strlen(msg->guess) != Game.word_length) {
 				sprintf(buffer, "guessResponse %s No\n", msg->guess);
-				send_message(buffer, client->name, client->fd);
+				send_message(buffer, client->name, client->fd, Game.debug);
 
 			} else {
 				/* get time recieved */
@@ -85,7 +85,7 @@ void *client_thread(void *arg) {
 				Clients[client->nonce].guesses++;
 
 				sprintf(buffer, "guessResponse %s Yes\n", msg->guess);
-				send_message(buffer, client->name, client->fd);
+				send_message(buffer, client->name, client->fd, Game.debug);
 	
 				//printf("%d %s\n", client->nonce, msg->guess);
 
@@ -203,7 +203,7 @@ void *game_thread(void * arg) {
 	/* send start game */
 	for (int i = 0; i < Players; i++) {
 		sprintf(buff, "startGame %d\n", MaxRounds);
-		send_message(buff, NULL, Clients[i].fd);
+		send_message(buff, NULL, Clients[i].fd, Game.debug);
 		if (Game.debug) printf("send: %s\n", buff);	
 	}
 
@@ -219,7 +219,7 @@ void *game_thread(void * arg) {
 		/* send start round */
 		for (int i = 0; i < Players; i++) {
 			sprintf(buff, "startRound %d %d %d\n", Game.word_length, currRound, MaxRounds - currRound + 1);
-			send_message(buff, NULL, Clients[i].fd);
+			send_message(buff, NULL, Clients[i].fd, Game.debug);
 			if (Game.debug) printf("send: %s\n", buff);	
 
 		}
@@ -233,7 +233,7 @@ void *game_thread(void * arg) {
 			for (int i = 0; i < Players; i++) {
 				Clients[i].canGuess = true;
 				sprintf(buff, "prompt %d %d", Game.word_length, Clients[i].guesses);
-				send_message(buff, Clients[i].name, Clients[i].fd);
+				send_message(buff, Clients[i].name, Clients[i].fd, Game.debug);
 				if (Game.debug) printf("send: %s\n", buff);	
 			}
 
@@ -244,7 +244,7 @@ void *game_thread(void * arg) {
 			// send guess_result
 			for (int i = 0; i < Players; i++) {
 				sprintf(buff, "guessResult\n");
-				send_message(buff, NULL, Clients[i].fd);
+				send_message(buff, NULL, Clients[i].fd, Game.debug);
 				if (Game.debug) printf("send: %s\n", buff);	
 			}
 		}
@@ -258,7 +258,7 @@ void *game_thread(void * arg) {
 
 		for (int i = 0; i < Players; i++) {
 			sprintf(buff, "endRound %d\n", MaxRounds - currRound);
-			send_message(buff, NULL, Clients[i].fd);
+			send_message(buff, NULL, Clients[i].fd, Game.debug);
 			if (Game.debug) printf("send: %s\n", buff);	
 		}
 
@@ -281,7 +281,7 @@ void *game_thread(void * arg) {
 
 	for (int i = 0; i < Players; i++) {
 		sprintf(buff, "endGame %s\n", Game.Win);
-		send_message(buff, NULL, Clients[i].fd);
+		send_message(buff, NULL, Clients[i].fd, Game.debug);
 	}
 
 	return NULL;
@@ -363,13 +363,13 @@ int main(int argc, char *argv[]) {
 
 				/* send No response to extra players */				
 				sprintf(buffer, "joinResult No\n");
-				send_message(buffer, msg->name, client_fd);
+				send_message(buffer, msg->name, client_fd, Game.debug);
 
 			} else { 
 		
 				/* send Yes reponse to players */
 				sprintf(buffer, "joinResult Yes\n");
-				send_message(buffer, msg->name, client_fd);
+				send_message(buffer, msg->name, client_fd, Game.debug);
 
 				/* add to list of clients, and start thread */ 
 				Clients[Players].fd = client_fd;
@@ -381,7 +381,7 @@ int main(int argc, char *argv[]) {
 				Clients[Players].nonce = Players;
 				Clients[Players].guesses = 0;
 				strcpy(Clients[Players].name, msg->name);
-				
+				printf("%s\n", Clients[Players].name);	
 				/* start thread */
 				pthread_create(&threads[Players], NULL, client_thread, &Clients[Players]);
 	

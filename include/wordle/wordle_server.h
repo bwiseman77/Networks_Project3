@@ -9,39 +9,42 @@
 #define MAX_WORDS 100
 #define MAX_WORD_LENGTH 20
 
+// data for each client
 typedef struct Client_info {
-	int fd;
-	int Tscore;
-	int Rscore;
-	bool inGame;
-	bool isTurn;
-	char name[256];
-	int nonce;
-	int number;
-	int guesses;
-	double time;
-	bool correct;
-	bool canGuess;
-	char guess[256];
-	char byg[256];
+	int fd; 			// fd for that client
+	int Tscore; 		// Overall score
+	int Rscore; 		// Score for that round
+	bool inGame; 		// if the client is in game
+	bool inLobby; 		// if the client is in lobby
+	bool isTurn; 		// if its the clients turn // Might not need 
+	char name[256]; 	// Clients name
+	int nonce; 			// Clients token
+	int number; 		// Clients number
+	int guesses; 		// number of guesses
+	double time; 		// time guess was received 
+	bool correct; 		// if guess is correct
+	bool canGuess; 	 	// if the client can guess
+	char guess[256]; 	// clients guess
+	char byg[256]; 		// the byg response string
 } Client_info; 
 
+// data for the game
 typedef struct Game_info {
-	bool started;
-	int word_length;
-	char *word;
-	bool winner;
-	char Win[256];
-	bool over;
-	int players;
-	int guessed_players;
-	int rounds;
-	char *gport;
-	bool debug;
+	bool started; 		// if the game has started 
+	int word_length; 	// length of current word
+	char *word; 		// ptr to current word from list
+	bool winner; 		// if someone guessed the word
+	char Win[256]; 		// winners name
+	bool over; 			// if game is over 
+	int players; 		// number of players
+	int guessed_players;// number of guessed 
+	int rounds; 		// number of rounds 
+	char *gport; 		// ptr to game port
+	bool debug; 		// bool for debug 
 } Game_info;
 
 
-void send_message(char *str, char *name, int fd);
+void send_message(char *str, char *name, int fd, bool dbg);
 cJSON *get_players(Type type);
 int get_words(char W[MAX_WORDS][MAX_WORD_LENGTH], char *);
 

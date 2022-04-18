@@ -81,7 +81,7 @@ cJSON *get_players(Type type) {
 	return array;
 }
 
-void send_message(char *str, char *name, int fd) {
+void send_message(char *str, char *name, int fd, bool dbg) {
 	pthread_mutex_lock(&Lock);
 	//printf("%s|\n", str);
 	
@@ -93,7 +93,7 @@ void send_message(char *str, char *name, int fd) {
 
 	//printf("type : %d\n", msg->type); 
 	s = message_to_json(msg, msg->type);
-	//printf("reponse: %ld %s\n", strlen(s) + 1, s);
+	if (dbg) printf("reponse: %ld %s\n", strlen(s) + 1, s);
 	send(fd, s, BUFSIZ, 0);
 	// printf("%d\n", b);
 	free(s);
