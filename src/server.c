@@ -116,7 +116,7 @@ void *client_thread(void *arg) {
 								byg[i] = 'Y';
 								letters[(int) g[i] - 'a'] = true;
 				
-								score += 5/Clients[client->nonce].guesses;
+								score += 3/Clients[client->nonce].guesses;
 								B = false;
 							}
 						}
@@ -300,6 +300,9 @@ int main(int argc, char *argv[]) {
 	int server_fd;
 	char buffer[BUFSIZ];
 
+	char hostname[30];
+	gethostname(hostname, sizeof(hostname));
+	printf("%s\n", hostname);
 
 
 	/* parse flags */
@@ -402,7 +405,7 @@ int main(int argc, char *argv[]) {
 
 					/* send clients to game port */			
 					Message start;
-					strcpy(start.server, "localhost");
+					strcpy(start.server, hostname);
 					strcpy(start.port, gport);
 					start.type = START_INSTANCE;
 
@@ -413,6 +416,7 @@ int main(int argc, char *argv[]) {
 
 						/* only if player in game */
 						if (Clients[i].inGame) {
+							if (Game.debug) printf("%s\n", start.server);
 							send(Clients[i].fd, s, strlen(s) + 1, 0);
 						}
 
