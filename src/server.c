@@ -29,7 +29,7 @@ double timestamp() {
 pthread_mutex_t Lock = PTHREAD_MUTEX_INITIALIZER;
 pthread_t threads[MAX_PLAYERS];
 Client_info Clients[MAX_PLAYERS];
-Game_info Game = {.started = false, .winner = false, .guessed_players = 0};
+Game_info Game = {.started = false, .winner = false, .guessed_players = 0, .players=0};
 int Players = 0;
 int players_in_game = 0;
 pthread_t game;
@@ -50,7 +50,9 @@ void *client_thread(void *arg) {
 		if (recv(client->fd, buffer, BUFSIZ, 0) <= 0) {
 			printf("client %s quit\n", client->name);
 			close(client->fd);
-			//if (Game.started) Game.players--;
+			pthread_mutex_lock(&Lock);
+			if (Game.players) Game.players--;
+			pthread_mutex_unlock(&Lock);	
 			client->inGame = false;
 			return 0;
 		}
@@ -176,6 +178,7 @@ void *game_thread(void * arg) {
 			for (int i = 0; i < Players; i++) {
 				/* check if nonce matches */
 				if (msg->nonce == Clients[i].nonce) {
+					Game.players++;
 					Clients[i].fd = new_fd;
 					Clients[i].inGame = true;
 
@@ -193,7 +196,6 @@ void *game_thread(void * arg) {
 
 		free(s);
 		free(msg);
-		Game.players++;
 	}
 
 	/* play game */
@@ -238,7 +240,7 @@ void *game_thread(void * arg) {
 			}
 
 			/* wait for players to guess */
-			while(Game.guessed_players < Players);
+			while(Game.guessed_players < Game.players);
 			Game.guessed_players = 0;
 	
 			// send guess_result
@@ -384,7 +386,7 @@ int main(int argc, char *argv[]) {
 				Clients[Players].nonce = Players;
 				Clients[Players].guesses = 0;
 				strcpy(Clients[Players].name, msg->name);
-				printf("%s\n", Clients[Players].name);	
+	
 				/* start thread */
 				pthread_create(&threads[Players], NULL, client_thread, &Clients[Players]);
 	
