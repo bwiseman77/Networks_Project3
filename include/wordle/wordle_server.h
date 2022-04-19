@@ -41,10 +41,11 @@ typedef struct Game_info {
 	int rounds; 		// number of rounds 
 	char *gport; 		// ptr to game port
 	bool debug; 		// bool for debug 
+	char *hostname;		// name of host
 } Game_info;
 
 
-void send_message(char *str, char *name, int fd, bool dbg);
+void send_message(char *, char *, int, bool, bool);
 cJSON *get_players(Type type);
 int get_words(char W[MAX_WORDS][MAX_WORD_LENGTH], char *);
 

@@ -51,7 +51,12 @@ void *client_thread(void *arg) {
 			printf("client %s quit\n", client->name);
 			close(client->fd);
 			pthread_mutex_lock(&Lock);
-			if (Game.players) Game.players--;
+			if (Game.players) {
+				Game.players--;
+			} else {
+				//puts("leaving lobby");
+				//players_in_game--;
+			}
 			pthread_mutex_unlock(&Lock);	
 			client->inGame = false;
 			return 0;
@@ -77,7 +82,7 @@ void *client_thread(void *arg) {
 			/* check if client can guess and is a valid sized guess */
 			if (!Clients[client->nonce].canGuess || strlen(msg->guess) != Game.word_length) {
 				sprintf(buffer, "guessResponse %s No\n", msg->guess);
-				send_message(buffer, client->name, client->fd, Game.debug);
+				send_message(buffer, client->name, client->fd, Game.debug, client->inGame);
 
 			} else {
 				/* get time recieved */
@@ -87,7 +92,7 @@ void *client_thread(void *arg) {
 				Clients[client->nonce].guesses++;
 
 				sprintf(buffer, "guessResponse %s Yes\n", msg->guess);
-				send_message(buffer, client->name, client->fd, Game.debug);
+				send_message(buffer, client->name, client->fd, Game.debug, client->inGame);
 	
 				//printf("%d %s\n", client->nonce, msg->guess);
 
@@ -166,12 +171,12 @@ void *game_thread(void * arg) {
 	Game.started = true;
 
 	/* collect players */
-	while(Game.players < Players) {
+	while(Game.players < Players) { // players in game
 		int new_fd = socket_accept(game_fd);
 		recv(new_fd, buff, BUFSIZ, 0);
 		Message *msg = message_from_json(buff);
 		char *s = message_to_json(msg, msg->type);
-		if (Game.debug) printf("recv: %s\n", s);
+		printf("recv: %s\n", s);
 
 		/* if join instance */
 		if (msg->type == JOIN_INSTANCE) {
@@ -205,7 +210,8 @@ void *game_thread(void * arg) {
 	/* send start game */
 	for (int i = 0; i < Players; i++) {
 		sprintf(buff, "startGame %d\n", MaxRounds);
-		send_message(buff, NULL, Clients[i].fd, Game.debug);
+		printf("%d %d\n", i, Clients[i].inGame);
+		send_message(buff, NULL, Clients[i].fd, Game.debug, Clients[i].inGame);
 		if (Game.debug) printf("send: %s\n", buff);	
 	}
 
@@ -221,7 +227,7 @@ void *game_thread(void * arg) {
 		/* send start round */
 		for (int i = 0; i < Players; i++) {
 			sprintf(buff, "startRound %d %d %d\n", Game.word_length, currRound, MaxRounds - currRound + 1);
-			send_message(buff, NULL, Clients[i].fd, Game.debug);
+			send_message(buff, NULL, Clients[i].fd, Game.debug, Clients[i].inGame);
 			if (Game.debug) printf("send: %s\n", buff);	
 
 		}
@@ -229,13 +235,13 @@ void *game_thread(void * arg) {
 		Game.winner = false;
 		/* curr round */
 
-		while(!Game.winner) {
-
+		while(!Game.winner && Game.players) {
+				
 			/* prompt for guess */
 			for (int i = 0; i < Players; i++) {
 				Clients[i].canGuess = true;
 				sprintf(buff, "prompt %d %d", Game.word_length, Clients[i].guesses);
-				send_message(buff, Clients[i].name, Clients[i].fd, Game.debug);
+				send_message(buff, Clients[i].name, Clients[i].fd, Game.debug, Clients[i].inGame);
 				if (Game.debug) printf("send: %s\n", buff);	
 			}
 
@@ -246,7 +252,7 @@ void *game_thread(void * arg) {
 			// send guess_result
 			for (int i = 0; i < Players; i++) {
 				sprintf(buff, "guessResult\n");
-				send_message(buff, NULL, Clients[i].fd, Game.debug);
+				send_message(buff, NULL, Clients[i].fd, Game.debug, Clients[i].inGame);
 				if (Game.debug) printf("send: %s\n", buff);	
 			}
 		}
@@ -260,7 +266,7 @@ void *game_thread(void * arg) {
 
 		for (int i = 0; i < Players; i++) {
 			sprintf(buff, "endRound %d\n", MaxRounds - currRound);
-			send_message(buff, NULL, Clients[i].fd, Game.debug);
+			send_message(buff, NULL, Clients[i].fd, Game.debug, Clients[i].inGame);
 			if (Game.debug) printf("send: %s\n", buff);	
 		}
 
@@ -283,7 +289,7 @@ void *game_thread(void * arg) {
 
 	for (int i = 0; i < Players; i++) {
 		sprintf(buff, "endGame %s\n", Game.Win);
-		send_message(buff, NULL, Clients[i].fd, Game.debug);
+		send_message(buff, NULL, Clients[i].fd, Game.debug, Clients[i].inGame);
 	}
 
 	return NULL;
@@ -364,17 +370,17 @@ int main(int argc, char *argv[]) {
 		if (msg->type == JOIN) {
 
 			/* if game is full */
-			if (Players >= num_players) {	
+			if (players_in_game >= num_players) {	
 
 				/* send No response to extra players */				
 				sprintf(buffer, "joinResult No\n");
-				send_message(buffer, msg->name, client_fd, Game.debug);
+				send_message(buffer, msg->name, client_fd, Game.debug, true);
 
 			} else { 
 		
 				/* send Yes reponse to players */
 				sprintf(buffer, "joinResult Yes\n");
-				send_message(buffer, msg->name, client_fd, Game.debug);
+				send_message(buffer, msg->name, client_fd, Game.debug, true);
 
 				/* add to list of clients, and start thread */ 
 				Clients[Players].fd = client_fd;
@@ -397,7 +403,7 @@ int main(int argc, char *argv[]) {
 				players_in_game++;
 
 				/* start game */
-				if (Players >= num_players) {
+				if (players_in_game >= num_players) {
 	
 					/* create game thread */
 					pthread_create(&game, NULL, game_thread, NULL);

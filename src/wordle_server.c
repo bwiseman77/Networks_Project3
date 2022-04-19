@@ -81,7 +81,9 @@ cJSON *get_players(Type type) {
 	return array;
 }
 
-void send_message(char *str, char *name, int fd, bool dbg) {
+void send_message(char *str, char *name, int fd, bool dbg, bool inGame) {
+	if (!inGame) return;
+	
 	pthread_mutex_lock(&Lock);
 	//printf("%s|\n", str);
 	
