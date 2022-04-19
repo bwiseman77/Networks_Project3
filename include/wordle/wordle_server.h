@@ -26,6 +26,7 @@ typedef struct Client_info {
 	bool canGuess; 	 	// if the client can guess
 	char guess[256]; 	// clients guess
 	char byg[256]; 		// the byg response string
+	bool joining; 		// if client is leaving to join game
 } Client_info; 
 
 // data for the game
@@ -42,6 +43,8 @@ typedef struct Game_info {
 	char *gport; 		// ptr to game port
 	bool debug; 		// bool for debug 
 	char *hostname;		// name of host
+	bool newGame; 		// play a new game
+	bool quit; 			// quit game instance
 } Game_info;
 
 

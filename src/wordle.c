@@ -97,6 +97,12 @@ char *message_to_json(Message *msg, Type type) {
 			cJSON_AddItemToObject(items, "PlayerInfo", msg->players);
 			cJSON_AddItemToObject(json, "Data", items); 
 			cJSON_AddStringToObject(json, "MessageType", "EndGame");
+			break;	
+		case PLAY_AGAIN:
+			cJSON_AddStringToObject(json, "MessageType", "PlayAgain");
+			break;
+		case STOP:
+			cJSON_AddStringToObject(json, "MessageType", "Stop");
 			break;
 
 		default:
@@ -183,6 +189,17 @@ void get_message_type(char *object, Message *msg) {
 	if(!strcmp(object, "endGame")) {
 		msg->type = END_GAME;
 	}
+
+	// PLAY_AGAIN
+	if(!strcmp(object, "playAgain")) {
+		msg->type = PLAY_AGAIN;
+	}
+	
+	// STOP
+	if(!strcmp(object, "stop")) {
+		msg->type = STOP;
+	}
+
 }
 
 Message *message_from_command(char *commands, char *name) {
@@ -216,13 +233,11 @@ Message *message_from_command(char *commands, char *name) {
 	} else if (!strcmp(cmd, "startGame")) {
 		msg->rounds = atoi(strtok(NULL, "\n"));
 		msg->type = START_GAME;
-		// TODO arry of players
 
 	} else if (!strcmp(cmd, "startRound")) {
 		msg->word_length = atoi(strtok(NULL, " "));
 		msg->round = atoi(strtok(NULL, " "));
 		msg->rounds_remaining = atoi(strtok(NULL, " "));
-		// TODO arry of players
 		msg->type = START_ROUND;
 
 	} else if (!strcmp(cmd, "prompt")) {
@@ -256,6 +271,12 @@ Message *message_from_command(char *commands, char *name) {
 		char *winner = strtok(NULL, "\n");
 		strcpy(msg->winnerName, winner);
 		msg->type = END_GAME;
+
+	} else if (!strcmp(cmd, "playAgain")) {
+		msg->type = PLAY_AGAIN;
+
+	} else if (!strcmp(cmd, "quit")) {
+		msg->type = STOP;
 
 	} else {
 		return NULL;

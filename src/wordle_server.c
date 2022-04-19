@@ -31,7 +31,7 @@ cJSON *get_players(Type type) {
 
 
 	for (int i = 0; i < Players; i++) {
-
+		if (!Clients[i].inGame) continue;
 		// build item {}
 		cJSON *item = cJSON_CreateObject();
 		if (type == START_GAME) {

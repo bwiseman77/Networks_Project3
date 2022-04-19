@@ -29,6 +29,8 @@ typedef enum {
 	GUESS_RESULT,
 	END_ROUND,
 	END_GAME,
+	PLAY_AGAIN,
+	STOP,
 } Type;
 
 typedef struct Message {

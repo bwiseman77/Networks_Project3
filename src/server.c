@@ -51,12 +51,9 @@ void *client_thread(void *arg) {
 			printf("client %s quit\n", client->name);
 			close(client->fd);
 			pthread_mutex_lock(&Lock);
-			if (Game.players) {
-				Game.players--;
-			} else {
-				//puts("leaving lobby");
-				//players_in_game--;
-			}
+			if (Game.players) Game.players--;
+			else if (!client->joining)	players_in_game--;
+		
 			pthread_mutex_unlock(&Lock);	
 			client->inGame = false;
 			return 0;
@@ -155,6 +152,15 @@ void *client_thread(void *arg) {
 
 		}
 
+		if (msg->type == PLAY_AGAIN) {
+			
+		} 
+
+		if (msg->type == STOP) {
+
+
+		}
+
 		free(msg);
 	}
 }	
@@ -171,12 +177,12 @@ void *game_thread(void * arg) {
 	Game.started = true;
 
 	/* collect players */
-	while(Game.players < Players) { // players in game
+	while(Game.players < players_in_game) { // players in game
 		int new_fd = socket_accept(game_fd);
 		recv(new_fd, buff, BUFSIZ, 0);
 		Message *msg = message_from_json(buff);
 		char *s = message_to_json(msg, msg->type);
-		printf("recv: %s\n", s);
+		printf("%d recv: %s\n", players_in_game, s);
 
 		/* if join instance */
 		if (msg->type == JOIN_INSTANCE) {
@@ -210,7 +216,6 @@ void *game_thread(void * arg) {
 	/* send start game */
 	for (int i = 0; i < Players; i++) {
 		sprintf(buff, "startGame %d\n", MaxRounds);
-		printf("%d %d\n", i, Clients[i].inGame);
 		send_message(buff, NULL, Clients[i].fd, Game.debug, Clients[i].inGame);
 		if (Game.debug) printf("send: %s\n", buff);	
 	}
@@ -291,7 +296,9 @@ void *game_thread(void * arg) {
 		sprintf(buff, "endGame %s\n", Game.Win);
 		send_message(buff, NULL, Clients[i].fd, Game.debug, Clients[i].inGame);
 	}
-
+	
+	puts("game over");
+	Game.over = true;
 	return NULL;
 }
 
@@ -384,13 +391,14 @@ int main(int argc, char *argv[]) {
 
 				/* add to list of clients, and start thread */ 
 				Clients[Players].fd = client_fd;
-				Clients[Players].inGame = true;	
+				Clients[Players].inGame = true;
 				Clients[Players].isTurn = false;
 				Clients[Players].correct = false;
 				Clients[Players].Tscore = 0;
 				Clients[Players].Rscore = 0;
 				Clients[Players].nonce = Players;
 				Clients[Players].guesses = 0;
+				Clients[Players].joining = false;
 				strcpy(Clients[Players].name, msg->name);
 	
 				/* start thread */
@@ -404,7 +412,7 @@ int main(int argc, char *argv[]) {
 
 				/* start game */
 				if (players_in_game >= num_players) {
-	
+					printf("%d\n", players_in_game);	
 					/* create game thread */
 					pthread_create(&game, NULL, game_thread, NULL);
 
@@ -424,6 +432,7 @@ int main(int argc, char *argv[]) {
 
 						/* only if player in game */
 						if (Clients[i].inGame) {
+							Clients[i].joining = true;
 							if (Game.debug) printf("%s\n", start.server);
 							send(Clients[i].fd, s, strlen(s) + 1, 0);
 						}
