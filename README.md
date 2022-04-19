@@ -18,6 +18,16 @@ start client: `/mpwordle $name $Server $port`
 
 To make a guess, type `guess $guess`
 
-To chat to other players, type `chat $message`
+To chat to other players, type `chat $message`\
+
+## Extensions
+
+Clients can quit and game continues
+
+\* Clients can quit lobby, making room for new players
+
+\* Clients can replay game while in same session
+
+(\* still needs to be implemented)
 
 
