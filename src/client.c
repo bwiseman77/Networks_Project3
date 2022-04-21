@@ -27,7 +27,7 @@ void *msg_thread(void *arg) {
 
 		if (msg) {
 			char *str = message_to_json(msg, msg->type);
-			printf("%s\n", str);
+			//printf("%s\n", str);
 			pthread_mutex_lock(&Lock);
 			send(ci->fd, str, strlen(str) + 1, 0);
 			pthread_mutex_unlock(&Lock);

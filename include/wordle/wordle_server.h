@@ -37,6 +37,7 @@ typedef struct Game_info {
 	bool winner; 		// if someone guessed the word
 	char Win[256]; 		// winners name
 	bool over; 			// if game is over 
+	int Mplayers; 		// max number of players
 	int players; 		// number of players
 	int guessed_players;// number of guessed 
 	int rounds; 		// number of rounds 

@@ -52,7 +52,7 @@ void *client_thread(void *arg) {
 			close(client->fd);
 			pthread_mutex_lock(&Lock);
 			if (Game.players) Game.players--;
-			else if (!client->joining)	players_in_game--;
+			else if (!client->joining) players_in_game--;
 		
 			pthread_mutex_unlock(&Lock);	
 			client->inGame = false;
@@ -176,18 +176,20 @@ void *game_thread(void * arg) {
 	Game.guessed_players = 0;
 	Game.started = true;
 
+	int new_fd;
 	/* collect players */
-	while(Game.players < players_in_game) { // players in game
-		int new_fd = socket_accept(game_fd);
+	while(Game.players < Game.Mplayers) { // Game.Mplayers
+		new_fd = socket_accept(game_fd);
 		recv(new_fd, buff, BUFSIZ, 0);
 		Message *msg = message_from_json(buff);
 		char *s = message_to_json(msg, msg->type);
-		printf("%d recv: %s\n", players_in_game, s);
+		if (Game.debug) printf("%d %d recv: %s\n", Game.players, Game.Mplayers, s);
 
 		/* if join instance */
 		if (msg->type == JOIN_INSTANCE) {
 			for (int i = 0; i < Players; i++) {
 				/* check if nonce matches */
+				printf("%d %d\n", msg->nonce, Clients[i].nonce);
 				if (msg->nonce == Clients[i].nonce) {
 					Game.players++;
 					Clients[i].fd = new_fd;
@@ -299,6 +301,8 @@ void *game_thread(void * arg) {
 	
 	puts("game over");
 	Game.over = true;
+	close(game_fd);
+	players_in_game = 0;
 	return NULL;
 }
 
@@ -345,6 +349,7 @@ int main(int argc, char *argv[]) {
 	Game.gport = gport;
 	Game.rounds = rounds;
 	Game.debug = debug;
+	Game.Mplayers = num_players;
 
 	if ((server_fd = socket_listen(lport)) < 0) { puts("error"); return 0; }
 	printf("listening on port %s\n", lport);
@@ -353,12 +358,12 @@ int main(int argc, char *argv[]) {
 	while (1) {
 
 		/* while game is on */
-		if (Game.started) {
+/*		if (Game.started) {
 			if (players_in_game <= 0) {
 				break;
 			}
 		}
-
+*/
 		/* gather clients */
 		int client_fd = socket_accept(server_fd);	
 		
@@ -377,7 +382,7 @@ int main(int argc, char *argv[]) {
 		if (msg->type == JOIN) {
 
 			/* if game is full */
-			if (players_in_game >= num_players) {	
+			if (players_in_game >= num_players) {// might not need 	
 
 				/* send No response to extra players */				
 				sprintf(buffer, "joinResult No\n");
@@ -412,7 +417,13 @@ int main(int argc, char *argv[]) {
 
 				/* start game */
 				if (players_in_game >= num_players) {
-					printf("%d\n", players_in_game);	
+					
+					/* set up Game */
+					Game.started = false;
+					Game.winner = false;
+					Game.over = false;
+					Game.guessed_players = 0;
+
 					/* create game thread */
 					pthread_create(&game, NULL, game_thread, NULL);
 
@@ -444,7 +455,7 @@ int main(int argc, char *argv[]) {
 					for (int i = 0; i < Players; i++) {
 						pthread_join(threads[i], NULL);
 					}
-				
+			
 				}
 
 			}
