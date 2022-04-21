@@ -51,11 +51,20 @@ void *client_thread(void *arg) {
 			printf("client %s quit\n", client->name);
 			close(client->fd);
 			pthread_mutex_lock(&Lock);
-			if (Game.players) Game.players--;
+			if (Game.players) {
+				Game.players--;
+
+			}
 			else if (!client->joining) players_in_game--;
-		
 			pthread_mutex_unlock(&Lock);	
 			client->inGame = false;
+			
+			/* send to other clients that they quit */
+			for (int i = 0; i < Players; i++) {
+				sprintf(buffer, "Chat %s quit the game\n", client->name);
+				if (Clients[i].fd != client->fd && client->joining) send_message(buffer, "Server", Clients[i].fd, Game.debug, Clients[i].inGame);	
+			}
+
 			return 0;
 		}
 
@@ -183,7 +192,7 @@ void *game_thread(void * arg) {
 		recv(new_fd, buff, BUFSIZ, 0);
 		Message *msg = message_from_json(buff);
 		char *s = message_to_json(msg, msg->type);
-		if (Game.debug) printf("%d %d recv: %s\n", Game.players, Game.Mplayers, s);
+		if (Game.debug) printf("recv: %s\n", s);
 
 		/* if join instance */
 		if (msg->type == JOIN_INSTANCE) {
@@ -191,7 +200,9 @@ void *game_thread(void * arg) {
 				/* check if nonce matches */
 				printf("%d %d\n", msg->nonce, Clients[i].nonce);
 				if (msg->nonce == Clients[i].nonce) {
+					pthread_mutex_lock(&Lock);
 					Game.players++;
+					pthread_mutex_unlock(&Lock);
 					Clients[i].fd = new_fd;
 					Clients[i].inGame = true;
 
@@ -207,6 +218,8 @@ void *game_thread(void * arg) {
 			}
 		}
 
+		printf("%d %d\n", Game.players, Game.Mplayers);
+
 		free(s);
 		free(msg);
 	}
@@ -214,7 +227,7 @@ void *game_thread(void * arg) {
 	/* play game */
 	int MaxRounds = Game.rounds;
 	int currRound = 1;
-
+	puts("start game");
 	/* send start game */
 	for (int i = 0; i < Players; i++) {
 		sprintf(buff, "startGame %d\n", MaxRounds);

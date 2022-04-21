@@ -5,7 +5,7 @@
 
 /* definitions */
 
-#define MAX_PLAYERS 10
+#define MAX_PLAYERS 100
 #define MAX_WORDS 100
 #define MAX_WORD_LENGTH 20
 

@@ -39,11 +39,27 @@ void *msg_thread(void *arg) {
 
 int main(int argc, char *argv[]) {
 
-	if (argc != 4) { puts("Error"); return 0; }
+	if (argc != 7) { puts("Error"); return 0; }
 
-	char *name = argv[1];
-	char *host = argv[2];
-	char *port = argv[3];
+	char *name = "student";
+	char *host = "student05.cse.nd.edu";
+	char *port = "42000";
+
+	int argind = 1;
+	while (argind < argc && argv[argind][0] == '-') {
+		if (!strcmp("-name", argv[argind])) {
+			name = argv[++argind];
+		} else if (!strcmp("-server", argv[argind])) {
+			host = argv[++argind];
+		} else if (!strcmp("-port", argv[argind])) {
+			port = argv[++argind];
+		} else {
+			puts("bad flag");
+			return 0;
+		}
+		argind++;
+
+	}
 
 	strcpy(client_info.name, name);
 
