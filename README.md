@@ -24,10 +24,8 @@ To chat to other players, type `chat $message`\
 
 Clients can quit and game continues
 
-\* Clients can quit lobby, making room for new players
+Clients can quit lobby, making room for new players
 
-\* Clients can replay game while in same session
-
-(\* still needs to be implemented)
+Slightly more complex scoring
 
 
