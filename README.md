@@ -18,7 +18,9 @@ start client: `/mpwordle -name $name -server $Server -port $port`
 
 To make a guess, type `guess $guess`
 
-To chat to other players, type `chat $message`\
+To chat to other players, type `chat $message`
+
+To quit, hit `CTRL-C`
 
 ## Extensions
 
