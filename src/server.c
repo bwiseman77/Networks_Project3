@@ -352,6 +352,9 @@ int main(int argc, char *argv[]) {
 			dict = argv[++argind];
 		} else if (!strcmp("-dbg", argv[argind])) {
 			debug = true;
+		} else {
+			puts("bad flag");
+			return 0;
 		}
 
 		argind++;
