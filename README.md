@@ -1,4 +1,4 @@
-# Networks_Project3
+# Multi-Player Wordle
 
 ## Set up
 
