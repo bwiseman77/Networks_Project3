@@ -1,4 +1,4 @@
-# Multi-Player Wordle
+# Multiplayer Wordle
 
 ## Set up
 
